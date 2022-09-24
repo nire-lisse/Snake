@@ -5,35 +5,34 @@
 #include <ctime>
 
 struct Tile {
-	char tale = ' ';
+	TCHAR tile = ' ';
 	int lifeTime = 0;
 };
 
-const int HEIGHT = 20, WIDHT = 20;
+const int HEIGHT = 50, WIDHT = 50;
 int gameover, score = 0;
 int headPositionX, headPositionY;
 int fruitX, fruitY;
 int direction, lengthBody = 0;
 Tile area[WIDHT][HEIGHT];
-
-
+HANDLE hConsoleOutput;
 
 void generateFruit() 
 {
 	srand((unsigned int)std::time(nullptr));
 	fruitX = rand() % (WIDHT - 2) + 1;
 	fruitY = rand() % (HEIGHT - 2) + 1;
-	while (area[fruitX][fruitY].tale != ' ')
+	while (area[fruitX][fruitY].tile != ' ')
 	{
 		fruitX = rand() % (WIDHT - 2) + 1;
 		fruitY = rand() % (HEIGHT - 2) + 1;
 	}
-	area[fruitX][fruitY].tale = '*';
+	area[fruitX][fruitY].tile = '*';
 }
 
 void setup() 
 {
-	HANDLE hConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+	hConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_FONT_INFOEX consoleCurrentFontEx;
 
 	consoleCurrentFontEx.cbSize = sizeof(CONSOLE_FONT_INFOEX);
@@ -43,6 +42,7 @@ void setup()
 	consoleCurrentFontEx.dwFontSize = { 12 , 16 };
 	printf("%d %d", consoleCurrentFontEx.dwFontSize.X, consoleCurrentFontEx.dwFontSize.Y);
 	SetCurrentConsoleFontEx(hConsoleOutput, true, &consoleCurrentFontEx);
+
 	gameover = 0;
 
 	for (int i = 0; i < WIDHT; i++)
@@ -51,30 +51,40 @@ void setup()
 		{
 			if (j == 0 || j == HEIGHT - 1 || i == 0 || i == WIDHT - 1)
 			{
-				area[i][j].tale = '#';
+				area[i][j].tile = '#';
 			}
 		}
 	}
 
 	headPositionX = WIDHT / 2;
 	headPositionY = HEIGHT / 2;
-	area[headPositionX][headPositionY].tale = '@';
+	area[headPositionX][headPositionY].tile = '@';
 
 	generateFruit();
 }
 
 void draw() 
 {
-	system("cls");
-	for (int i = 0; i < HEIGHT; i++)
+	wchar_t str[16];
+	COORD coord;
+	DWORD d;
+
+
+	for (short i = 0; i < HEIGHT; i++)
 	{
-		for (int j = 0; j < WIDHT; j++)
+		for (short j = 0; j < WIDHT; j++)
 		{
-			printf("%c", area[j][i].tale);
+			coord = { j , i };
+			WriteConsoleOutputCharacter(hConsoleOutput, &area[j][i].tile, 1, coord, &d);
 		}
-		printf("\n");
 	}
-	printf("Score = %d", score);
+
+
+	size_t lenStr = swprintf(str, 16, L"Score = %d", score);
+
+	coord = { 0 , HEIGHT + 1 };
+	WriteConsoleOutputCharacter(hConsoleOutput, str, lenStr, coord, &d);
+
 }
 
 void input() 
@@ -106,9 +116,9 @@ void input()
 
 void logic()
 {
-	Sleep(50);
+	Sleep(70);
 
-	area[headPositionX][headPositionY].tale = '0';
+	area[headPositionX][headPositionY].tile = '0';
 	area[headPositionX][headPositionY].lifeTime = lengthBody;
 	
 	switch (direction)
@@ -128,12 +138,12 @@ void logic()
 	}
 
 	if (headPositionX <= 0 || headPositionX >= WIDHT - 1 || headPositionY <= 0 ||
-		headPositionY >= HEIGHT - 1 || area[headPositionX][headPositionY].tale == '0' && lengthBody != 0)
+		headPositionY >= HEIGHT - 1 || area[headPositionX][headPositionY].tile == '0' && lengthBody != 0)
 	{
 		gameover++;
 	}
 
-	area[headPositionX][headPositionY].tale = '@';
+	area[headPositionX][headPositionY].tile = '@';
 
 	if (headPositionX == fruitX && headPositionY == fruitY)
 	{
@@ -149,11 +159,11 @@ void logic()
 			for (int j = 0; j < HEIGHT; j++)
 			{
 
-				if (area[i][j].lifeTime <= 0 && area[i][j].tale == '0')
+				if (area[i][j].lifeTime <= 0 && area[i][j].tile == '0')
 				{
-					area[i][j].tale = ' ';
+					area[i][j].tile = ' ';
 				}
-				if (area[i][j].lifeTime > 0 && area[i][j].tale == '0')
+				if (area[i][j].lifeTime > 0 && area[i][j].tile == '0')
 				{
 					area[i][j].lifeTime--;
 				}
