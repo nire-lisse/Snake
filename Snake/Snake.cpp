@@ -58,6 +58,14 @@ void setupConsole()
 	SetConsoleWindowInfo(hConsoleOutput, true, &consoleWindowInfo);
 
 	SetConsoleTitle(L"Snake");
+
+	HWND hWnd = GetConsoleWindow();
+
+	LONG_PTR WindowLongPtr = GetWindowLongPtr(hWnd, GWL_STYLE);
+
+	WindowLongPtr &= ~(WS_THICKFRAME | WS_CAPTION);
+
+	SetWindowLongPtr(hWnd, GWL_STYLE, WindowLongPtr);
 }
 
 void setup()
