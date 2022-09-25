@@ -3,21 +3,24 @@
 #include <conio.h>
 #include <Windows.h>
 #include <ctime>
+#include <string>
 
-struct Tile {
-	TCHAR tile = ' ';
+struct Tile
+{
+	char tile;
 	int lifeTime = 0;
 };
 
-const int HEIGHT = 30, WIDTH = 30;
-int gameover, score = 0;
+const int HEIGHT = 5, WIDTH = 5;
+int gameover, score;
 int headPositionX, headPositionY;
 int fruitX, fruitY;
-int direction, lengthBody = 0;
+int direction, lengthBody;
+int restart = 0, bestScore;
 Tile area[WIDTH][HEIGHT];
 HANDLE hConsoleOutput;
 
-void generateFruit() 
+void generateFruit()
 {
 	srand((unsigned int)std::time(nullptr));
 	fruitX = rand() % (WIDTH - 2) + 1;
@@ -32,7 +35,7 @@ void generateFruit()
 	area[fruitX][fruitY].tile = '*';
 }
 
-void setup() 
+void setupConsole()
 {
 	hConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_FONT_INFOEX consoleCurrentFontEx;
@@ -41,22 +44,28 @@ void setup()
 
 	GetCurrentConsoleFontEx(hConsoleOutput, false, &consoleCurrentFontEx);
 	wcscpy_s(consoleCurrentFontEx.FaceName, L"Terminal");
+	consoleCurrentFontEx.FontFamily = 48;
 	consoleCurrentFontEx.dwFontSize = { 16 , 16 };
-	printf("%d %d", consoleCurrentFontEx.dwFontSize.X, consoleCurrentFontEx.dwFontSize.Y);
 	SetCurrentConsoleFontEx(hConsoleOutput, true, &consoleCurrentFontEx);
 
-	SMALL_RECT consoleWindowInfo = { 0, 0, WIDTH - 1, HEIGHT + 1 };
+	SMALL_RECT consoleWindowInfo = { 0, 0, 0, 0 };
 	SetConsoleWindowInfo(hConsoleOutput, true, &consoleWindowInfo);
 
 	COORD consoleDisplayMode = { WIDTH, HEIGHT + 2 };
-	SetConsoleDisplayMode(hConsoleOutput, 2, &consoleDisplayMode);
 	SetConsoleScreenBufferSize(hConsoleOutput, consoleDisplayMode);
 
-	wchar_t Title[6];
-	swprintf(Title, 6, L"Snake");
-	SetConsoleTitle(Title);
+	consoleWindowInfo = { 0, 0, WIDTH - 1, HEIGHT + 1 };
+	SetConsoleWindowInfo(hConsoleOutput, true, &consoleWindowInfo);
 
+	SetConsoleTitle(L"Snake");
+}
+
+void setup()
+{
 	gameover = 0;
+	lengthBody = 0;
+	score = 0;
+	direction = 0;
 
 	for (int i = 0; i < WIDTH; i++)
 	{
@@ -64,6 +73,8 @@ void setup()
 		{
 			if (j == 0 || j == HEIGHT - 1 || i == 0 || i == WIDTH - 1)
 				area[i][j].tile = '#';
+			else
+				area[i][j].tile = ' ';
 		}
 	}
 
@@ -74,13 +85,9 @@ void setup()
 	generateFruit();
 }
 
-void draw() 
+void draw()
 {
-	wchar_t str[16];
-	COORD coord;
-	DWORD d;
-
-	static wchar_t oldTiles[WIDTH][HEIGHT];
+	static char oldTiles[WIDTH][HEIGHT];
 
 	for (short i = 0; i < HEIGHT; i++)
 	{
@@ -88,23 +95,43 @@ void draw()
 		{
 			if (oldTiles[j][i] != area[j][i].tile)
 			{
-				coord = { j , i };
-				WriteConsoleOutputCharacter(hConsoleOutput, &area[j][i].tile, 1, coord, &d);
+				CHAR_INFO ch;
+				SMALL_RECT coords = { j, i, j, i };
+
+				ch.Char.UnicodeChar = area[j][i].tile;
+				ch.Attributes = FOREGROUND_BLUE;
+
+				switch (ch.Char.UnicodeChar)
+				{
+				case '@':
+					ch.Attributes = FOREGROUND_RED;
+					break;
+				case '0':
+					ch.Attributes = FOREGROUND_GREEN;
+					break;
+				case '*':
+					ch.Attributes = FOREGROUND_GREEN | FOREGROUND_RED;
+					break;
+				}
+
+				WriteConsoleOutput(hConsoleOutput, &ch, { 1 , 1 }, { 0 , 0 }, &coords);
 				oldTiles[j][i] = area[j][i].tile;
 			}
 		}
 	}
 
+	wchar_t str[16];
+	DWORD d;
+
 	size_t lenStr = swprintf(str, 16, L"Score = %d", score);
 
-	coord = { 0 , HEIGHT + 1 };
-	WriteConsoleOutputCharacter(hConsoleOutput, str, lenStr, coord, &d);
+	WriteConsoleOutputCharacter(hConsoleOutput, str, lenStr, { 0 , HEIGHT + 1 }, &d);
 }
 
-void input() 
+void input()
 {
 
-	if (_kbhit()) 
+	if (_kbhit())
 	{
 		switch (_getch())
 		{
@@ -134,7 +161,7 @@ void logic()
 
 	area[headPositionX][headPositionY].tile = '0';
 	area[headPositionX][headPositionY].lifeTime = lengthBody;
-	
+
 	switch (direction)
 	{
 	case 1:
@@ -184,14 +211,45 @@ void logic()
 	}
 }
 
-int main() 
+void restartGame()
 {
-	setup();
+	wchar_t str[32];
+	DWORD d;
 
-	while (!gameover)
+	bestScore = max(bestScore, score);
+
+	size_t lenStr = swprintf(str, 32, L"Best score = %d", bestScore);
+
+	WriteConsoleOutputCharacter(hConsoleOutput, str, lenStr, { 0 , HEIGHT }, &d);
+
+	lenStr = swprintf(str, 32, L"Press r to restart");
+
+	WriteConsoleOutputCharacter(hConsoleOutput, str, lenStr, { 0 , HEIGHT + 1 }, &d);
+
+	if (_getch() != 'r')
 	{
-		draw();
-		input();
-		logic();
+		restart++;
+		return;
+	}
+
+	WriteConsoleOutputCharacter(hConsoleOutput, std::wstring(lenStr, L' ').c_str(), lenStr, { 0 , HEIGHT + 1 }, &d);
+}
+
+int main()
+{
+	setupConsole();
+
+	while (!restart)
+	{
+		setup();
+
+		while (!gameover)
+		{
+			draw();
+			input();
+			logic();
+		}
+
+		restartGame();
 	}
 }
