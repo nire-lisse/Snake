@@ -1,4 +1,4 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <conio.h>
 #include <Windows.h>
@@ -11,7 +11,7 @@ struct Tile
 	int lifeTime = 0;
 };
 
-const int HEIGHT = 5, WIDTH = 5;
+const int HEIGHT = 30, WIDTH = 30;
 int gameover, score;
 int headPositionX, headPositionY;
 int fruitX, fruitY;
