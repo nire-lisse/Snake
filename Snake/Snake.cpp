@@ -4,11 +4,19 @@
 #include <Windows.h>
 #include <ctime>
 #include <string>
+#include <queue>
+#include <stack>
 
 struct Tile
 {
 	char tile;
 	int lifeTime = 0;
+};
+
+struct Cell
+{
+	int x;
+	int y;
 };
 
 const int HEIGHT = 30, WIDTH = 30;
@@ -19,6 +27,70 @@ int direction, lengthBody;
 int restart = 0, bestScore;
 Tile area[WIDTH][HEIGHT];
 HANDLE hConsoleOutput;
+std::stack<Cell> path;
+
+
+void bfs()
+{
+	bool visited[WIDTH][HEIGHT];
+	std::queue<Cell> queue;
+	Cell s;
+	Cell prev[WIDTH][HEIGHT];
+
+	wchar_t str[32];
+	DWORD d;
+
+	for (int i = 0; i < WIDTH; i++)
+	{
+		for (int j = 0; j < HEIGHT; j++)
+		{
+			visited[i][j] = false;
+		}
+	}
+
+	visited[headPositionX][headPositionY] = true;
+	queue.push({ headPositionX, headPositionY });
+
+	while (!queue.empty())
+	{
+		s = queue.front();
+		queue.pop();
+
+		int	dX[] = { 1 , 0 , -1 , 0 };
+		int	dY[] = { 0 , 1 , 0 , -1 };
+
+		if (s.x == fruitX && s.y == fruitY)
+		{
+			break;
+		}
+
+		for (int i = 0; i < 4; i++)
+		{
+			int x = s.x + dX[i];
+			int y = s.y + dY[i];
+
+			if (!visited[x][y] && (area[x][y].tile == ' ' || area[x][y].tile == '*'))
+			{
+				visited[x][y] = true;
+				queue.push({ x , y });
+				prev[x][y].x = s.x;
+				prev[x][y].y = s.y;
+			}
+		}
+
+	}
+
+	int x = fruitX, y = fruitY;
+
+	path.push({ x, y });
+
+	while (path.top().x != headPositionX || path.top().y != headPositionY)
+	{
+		path.push({ prev[x][y].x, prev[x][y].y});
+		x = path.top().x;
+		y = path.top().y;
+	}
+}
 
 void generateFruit()
 {
@@ -33,6 +105,8 @@ void generateFruit()
 	}
 
 	area[fruitX][fruitY].tile = '*';
+
+	bfs();
 }
 
 void setupConsole()
@@ -51,10 +125,10 @@ void setupConsole()
 	SMALL_RECT consoleWindowInfo = { 0, 0, 0, 0 };
 	SetConsoleWindowInfo(hConsoleOutput, true, &consoleWindowInfo);
 
-	COORD consoleDisplayMode = { WIDTH, HEIGHT + 2 };
+	COORD consoleDisplayMode = { WIDTH, HEIGHT + 3 };
 	SetConsoleScreenBufferSize(hConsoleOutput, consoleDisplayMode);
 
-	consoleWindowInfo = { 0, 0, WIDTH - 1, HEIGHT + 1 };
+	consoleWindowInfo = { 0, 0, WIDTH - 1, HEIGHT + 2 };
 	SetConsoleWindowInfo(hConsoleOutput, true, &consoleWindowInfo);
 
 	SetConsoleTitle(L"Snake");
@@ -136,55 +210,16 @@ void draw()
 	WriteConsoleOutputCharacter(hConsoleOutput, str, lenStr, { 0 , HEIGHT + 1 }, &d);
 }
 
-void input()
-{
-
-	if (_kbhit())
-	{
-		switch (_getch())
-		{
-		case 'w':
-			if (direction != 3)
-				direction = 1;
-			break;
-		case 'a':
-			if (direction != 4)
-				direction = 2;
-			break;
-		case 's':
-			if (direction != 1)
-				direction = 3;
-			break;
-		case 'd':
-			if (direction != 2)
-				direction = 4;
-			break;
-		}
-	}
-}
-
 void logic()
 {
-	Sleep(70);
+	//Sleep(50);
 
 	area[headPositionX][headPositionY].tile = '0';
 	area[headPositionX][headPositionY].lifeTime = lengthBody;
 
-	switch (direction)
-	{
-	case 1:
-		headPositionY--;
-		break;
-	case 2:
-		headPositionX--;
-		break;
-	case 3:
-		headPositionY++;
-		break;
-	case 4:
-		headPositionX++;
-		break;
-	}
+	headPositionX = path.top().x;
+	headPositionY = path.top().y;
+	path.pop();
 
 	if (area[headPositionX][headPositionY].tile == '#' ||
 		area[headPositionX][headPositionY].tile == '0' && lengthBody != 0)
@@ -254,7 +289,7 @@ int main()
 		while (!gameover)
 		{
 			draw();
-			input();
+			//input();
 			logic();
 		}
 
