@@ -80,11 +80,17 @@ void bfs()
 
 	}
 
+	if (!visited[fruitX][fruitY])
+	{
+		gameover++;
+		return;
+	}
+
 	int x = fruitX, y = fruitY;
 
 	path.push({ x, y });
 
-	while (path.top().x != headPositionX || path.top().y != headPositionY)
+	while (prev[x][y].x != headPositionX || prev[x][y].y != headPositionY)
 	{
 		path.push({ prev[x][y].x, prev[x][y].y});
 		x = path.top().x;
@@ -212,7 +218,7 @@ void draw()
 
 void logic()
 {
-	//Sleep(50);
+	Sleep(0.8);
 
 	area[headPositionX][headPositionY].tile = '0';
 	area[headPositionX][headPositionY].lifeTime = lengthBody;
@@ -269,11 +275,11 @@ void restartGame()
 
 	WriteConsoleOutputCharacter(hConsoleOutput, str, lenStr, { 0 , HEIGHT + 1 }, &d);
 
-	if (_getch() != 'r')
+	/*if (_getch() != 'r')
 	{
 		restart++;
 		return;
-	}
+	}*/
 
 	WriteConsoleOutputCharacter(hConsoleOutput, std::wstring(lenStr, L' ').c_str(), lenStr, { 0 , HEIGHT + 1 }, &d);
 }
@@ -289,7 +295,6 @@ int main()
 		while (!gameover)
 		{
 			draw();
-			//input();
 			logic();
 		}
 
