@@ -23,7 +23,7 @@ const int HEIGHT = 30, WIDTH = 30;
 int gameover, score;
 int headPositionX, headPositionY;
 int fruitX, fruitY;
-int direction, lengthBody;
+int lengthBody;
 int restart = 0, bestScore;
 Tile area[WIDTH][HEIGHT];
 HANDLE hConsoleOutput;
@@ -34,7 +34,6 @@ void bfs()
 {
 	bool visited[WIDTH][HEIGHT];
 	std::queue<Cell> queue;
-	Cell s;
 	Cell prev[WIDTH][HEIGHT];
 
 	wchar_t str[32];
@@ -53,7 +52,7 @@ void bfs()
 
 	while (!queue.empty())
 	{
-		s = queue.front();
+		Cell s = queue.front();
 		queue.pop();
 
 		int	dX[] = { 1 , 0 , -1 , 0 };
@@ -153,7 +152,6 @@ void setup()
 	gameover = 0;
 	lengthBody = 0;
 	score = 0;
-	direction = 0;
 
 	for (int i = 0; i < WIDTH; i++)
 	{
@@ -218,7 +216,7 @@ void draw()
 
 void logic()
 {
-	Sleep(0.8);
+	Sleep(15);
 
 	area[headPositionX][headPositionY].tile = '0';
 	area[headPositionX][headPositionY].lifeTime = lengthBody;
@@ -271,15 +269,11 @@ void restartGame()
 
 	WriteConsoleOutputCharacter(hConsoleOutput, str, lenStr, { 0 , HEIGHT }, &d);
 
-	lenStr = swprintf(str, 32, L"Press r to restart");
+	lenStr = swprintf(str, 32, L"Wait 10 sec to restart");
 
 	WriteConsoleOutputCharacter(hConsoleOutput, str, lenStr, { 0 , HEIGHT + 1 }, &d);
 
-	/*if (_getch() != 'r')
-	{
-		restart++;
-		return;
-	}*/
+	Sleep(10000);
 
 	WriteConsoleOutputCharacter(hConsoleOutput, std::wstring(lenStr, L' ').c_str(), lenStr, { 0 , HEIGHT + 1 }, &d);
 }
