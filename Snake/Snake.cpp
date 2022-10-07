@@ -35,9 +35,7 @@ void bfs()
 	bool visited[WIDTH][HEIGHT];
 	std::queue<Cell> queue;
 	Cell prev[WIDTH][HEIGHT];
-
-	wchar_t str[32];
-	DWORD d;
+	int dist[WIDTH][HEIGHT];
 
 	for (int i = 0; i < WIDTH; i++)
 	{
@@ -49,14 +47,15 @@ void bfs()
 
 	visited[headPositionX][headPositionY] = true;
 	queue.push({ headPositionX, headPositionY });
+	dist[headPositionX][headPositionY] = 0;
 
 	while (!queue.empty())
 	{
 		Cell s = queue.front();
 		queue.pop();
 
-		int	dX[] = { 1 , 0 , -1 , 0 };
-		int	dY[] = { 0 , 1 , 0 , -1 };
+		int	dX[4] = { 1 , 0 , -1 , 0 };
+		int	dY[4] = { 0 , 1 , 0 , -1 };
 
 		if (s.x == fruitX && s.y == fruitY)
 		{
@@ -67,8 +66,9 @@ void bfs()
 		{
 			int x = s.x + dX[i];
 			int y = s.y + dY[i];
+			dist[x][y] = dist[s.x][s.y] + 1;
 
-			if (!visited[x][y] && (area[x][y].tile == ' ' || area[x][y].tile == '*'))
+			if (!visited[x][y] && (area[x][y].tile == ' ' || area[x][y].tile == '*' || area[x][y].tile == '0' && dist[x][y] > area[x][y].lifeTime + 1))
 			{
 				visited[x][y] = true;
 				queue.push({ x , y });
@@ -76,7 +76,6 @@ void bfs()
 				prev[x][y].y = s.y;
 			}
 		}
-
 	}
 
 	if (!visited[fruitX][fruitY])
@@ -217,7 +216,7 @@ void draw()
 void logic()
 {
 	Sleep(15);
-
+	
 	area[headPositionX][headPositionY].tile = '0';
 	area[headPositionX][headPositionY].lifeTime = lengthBody;
 
